@@ -37,10 +37,10 @@ To do anything with it, you'll need to include the library:
   * [.length(ansi_string)](#module_ascii_art_ansi.length) ⇒ <code>int</code>
   * [.strip(ansi_string)](#module_ascii_art_ansi.strip) ⇒ <code>string</code>
   * [.toArray(ansi_string)](#module_ascii_art_ansi.to_array) ⇒ <code>Array</code>
-  * [.trimTo(ansi_string, length)](#module_ascii_art_ansi.trimTo) ⇒ <code>string</code>
+  * [.substring(ansi_string, start, stop)](#module_ascii_art_ansi.substring) ⇒ <code>string</code>
   * [.charAt(ansi_string, position)](#module_ascii_art_ansi.charat) ⇒ <code>string</code> (length:1)
-  * [.intersect(string1, .. stingN, callback)](#module_ascii_art_ansi.to_array) ⇒ <code>Promise</code> (if callback not present)
-  * [.interstyle(string1, .. stingN, callback)](#module_ascii_art_ansi.to_array) ⇒ <code>Promise</code> (if callback not present)
+  * [.intersect(string1, .. stingN, callback)](#module_ascii_art_ansi.intersect) ⇒ <code>Promise</code> (if callback not present)
+  * [.interstyle(string1, .. stingN, callback)](#module_ascii_art_ansi.interstyle) ⇒ <code>Promise</code> (if callback not present)
 
 <a name="module_ascii_art_ansi.map"></a>
 ### .map(ansiString, handler)
@@ -97,7 +97,7 @@ Remove any ansi codes from the string
     var result = ansi.strip(ansiString);
 ```
 
-<a name="module_ascii_art_ansi.toArray"></a>
+<a name="module_ascii_art_ansi.to_array"></a>
 ### .length(ansiString)
 convert this string to an array of characters
 **Kind**: static property of <code>[ascii-art-ansi](#ascii-art-ansi)</code>
@@ -127,9 +127,9 @@ Extract a specific character from the string, by position
     var chr = ansi.charAt(ansiString, 4);
 ```
 
-<a name="module_ascii_art_ansi.trimto"></a>
-### .trimTo(ansiString)
-Trim off the end of the string
+<a name="module_ascii_art_ansi.substring"></a>
+### .substring(ansiString, start, stop)
+Like the javascript built-in substring, but ansi aware
 **Kind**: static property of <code>[ascii-art-ansi](#ascii-art-ansi)</code>
 
 | Param | Type | Description |
@@ -161,7 +161,7 @@ Intersect/overlay any number of strings
 ```
 
 <a name="module_ascii_art_ansi.interstyle"></a>
-### .interstyle(ansiString) [TBD]
+### .interstyle(ansiString)
 Intersect/overlay any number of strings and include their styles
 **Kind**: static property of <code>[ascii-art-ansi](#ascii-art-ansi)</code>
 
@@ -183,7 +183,9 @@ Roadmap
 -------
 
 #### Goals
-- `.substring()`, `.interstyle()`
+- color reducer
+- streaming
+- pluggable colorsets/encodings
 
 
 Testing

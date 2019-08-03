@@ -43,6 +43,21 @@
                 ansi.strip(rendered).should.equal(text);
             });
 
+            it('substring matches built-in on text string', function(){
+                var result = ansi.substring(text, 2, 4);
+                result.length.should.equal(2);
+                result.should.equal('ar');
+            });
+
+            it('substring matches built-in on ansi string', function(){
+                var styles =
+                    ansi.Codes(text.substring(0,3), 'red+blink+inverse')+
+                    ansi.Codes(text.substring(3), 'blue+blink+inverse');
+                var result = ansi.substring(styles, 2, 4);
+                ansi.length(result).should.equal(2);
+                ansi.strip(result).should.equal('ar');
+            });
+
             it('can fetch a specific character in an ascii string', function(){
                 ansi.charAt(
                     ansi.Codes(text, 'red+blink+inverse'),
@@ -130,7 +145,7 @@
                 });
             });
 
-            it.skip('interstyle 2 ansi strings', function(done){
+            it('interstyle 2 ansi strings', function(done){
                 var a = ansi.Codes('SOME     ', 'blue+blink+inverse');
                 var b = ansi.Codes('    THING', 'red+blink+inverse');
                 var original = 'SOMETHING';

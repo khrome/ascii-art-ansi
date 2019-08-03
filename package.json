@@ -1,7 +1,7 @@
 {
   "name": "ascii-art-ansi",
   "homepage": "https://github.com/khrome/ascii-art-ansi",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "main": "ansi.js",
   "description": "Ansi codes for ascii-art",
   "keywords": [

@@ -29,11 +29,40 @@
             });
             return count;
         },
+        codeRender :function(codes){
+            var result = codes.map(function(code, index){
+                return '\033['+code+'m';
+            }).join('');
+            return result;
+        },
+        clear :function(codes){
+            return AsciiArt.Ansi.codeRender(['0']);
+        },
+        substring :function(value, start, stop){
+            var previousCharPos;
+            var result;
+            var lowerbound = 0;
+            var upperbound;
+            if(!stop) upperbound = value.length;
+            var isDone = false;
+            AsciiArt.Ansi.map(
+                value,
+                function(chr, codes, rowcol, pos, done, charPos){
+                    if(start && pos === start){
+                        lowerbound = previousCharPos+1;
+                        if(!stop) done();
+                    }
+                    if(stop && pos === stop){
+                        upperbound = charPos;
+                        if(!stop) done();
+                    }
+                    previousCharPos = charPos;
+                }
+            );
+            return value.substring(upperbound, lowerbound);
+        },
         trimTo :function(value, length){
-            var result = AsciiArt.Ansi.map(value, function(chr, codes, pos, done){
-                if(length == pos) return done();
-                return chr;
-            });
+            var result = AsciiArt.Ansi.substring(value, 0, length);
             return result;
         },
         toArray :function(value, includeStyles){
@@ -41,7 +70,7 @@
             AsciiArt.Ansi.map(value, function(chr, styles){
                 var res = includeStyles?(styles.map(function(style){
                     return '\033['+style+'m'
-                }))+chr:chr;
+                })).join('')+chr:chr;
                 results.push(res);
                 return res;
             });
@@ -88,10 +117,16 @@
                 }
             }
             args.push(function(){
-                var result = Array.prototype.slice.call(
+                var args = Array.prototype.slice.call(
                     arguments
-                ).reduce(function(agg, item){
-                    return agg===' '?item:(agg || item);
+                )
+                var cb;
+                if(typeof args[args.length-1] === 'function') cb = args.pop();
+                var result = args.reduce(function(agg, item, index){
+                    return (
+                        agg &&
+                        AsciiArt.Ansi.strip(agg).trim()
+                    )?agg:item;
                 }, undefined);
                 return result;
             });
