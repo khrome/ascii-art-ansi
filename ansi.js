@@ -8,7 +8,7 @@
         // Browser globals (root is window)
         root.AsciiArtAnsi = factory(root.maplex, root.AsciiArtColor);
     }
-}(this, function(Maplex){
+}(this, function(Maplex, Color){
     var AsciiArt = {};
     var parentArt;
     maplex = new Maplex();
@@ -273,10 +273,18 @@
         var color_attrs = color.split("+");
         var ansi_str = "";
         for(var i=0, attr; attr = color_attrs[i]; i++) {
-            if(codes[attr]){
-                ansi_str += codes[attr];
+            if(Color.standardColorNames.indexOf(attr) != -1){
+                ansi_str += Color.named(attr)
             }else{
-                ansi_str += "ESC[38;5;#m"
+                if(codes[attr]){
+                    ansi_str += codes[attr];
+                }else{
+                    if(attr[0] === '#'){
+                        ansi_str += Color.code(attr)
+                    }else{
+
+                    }
+                }
             }
         }
         ansi_str += str;

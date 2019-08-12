@@ -30,6 +30,7 @@ To do anything with it, you'll need to include the library:
 
 ```javascript
     const ansi = require('ascii-art-ansi');
+    const color = require('ascii-art-ansi/color');
 ```
 
 * [ascii-art-ansi](#module_ascii_art_ansi)
@@ -42,10 +43,14 @@ To do anything with it, you'll need to include the library:
   * [.intersect(string1, .. stingN, callback)](#module_ascii_art_ansi.intersect) ⇒ <code>Promise</code> (if callback not present)
   * [.interstyle(string1, .. stingN, callback)](#module_ascii_art_ansi.interstyle) ⇒ <code>Promise</code> (if callback not present)
 * [ascii-art-ansi/color](#module_ascii_art_ansi.color)
+    * [Color.code(value)](#module_ascii_art_ansi.color.code) ⇒ <code>string</code>
+    * [Color.name(value)](#module_ascii_art_ansi.color.name) ⇒ <code>string</code>
+    * [Color.is256](#module_ascii_art_ansi.color.is256) ⇒ <code>boolean</code>
 
 <a name="module_ascii_art_ansi.map"></a>
 ### .map(ansiString, handler)
 Map through an ansi string one character at a time, without any of those characters being styles.
+
 **Kind**: static property of <code>[ascii-art-ansi](#ascii-art-ansi)</code>
 
 | Param | Type | Description |
@@ -71,6 +76,7 @@ Map through an ansi string one character at a time, without any of those charact
 <a name="module_ascii_art_ansi.length"></a>
 ### .length(ansiString)
 The number of non ansi code characters in the string
+
 **Kind**: static property of <code>[ascii-art-ansi](#ascii-art-ansi)</code>
 
 | Param | Type | Description |
@@ -86,6 +92,7 @@ The number of non ansi code characters in the string
 <a name="module_ascii_art_ansi.strip"></a>
 ### .strip(ansiString)
 Remove any ansi codes from the string
+
 **Kind**: static property of <code>[ascii-art-ansi](#ascii-art-ansi)</code>
 
 | Param | Type | Description |
@@ -101,6 +108,7 @@ Remove any ansi codes from the string
 <a name="module_ascii_art_ansi.to_array"></a>
 ### .length(ansiString)
 convert this string to an array of characters
+
 **Kind**: static property of <code>[ascii-art-ansi](#ascii-art-ansi)</code>
 
 | Param | Type | Description |
@@ -131,6 +139,7 @@ Extract a specific character from the string, by position
 <a name="module_ascii_art_ansi.substring"></a>
 ### .substring(ansiString, start, stop)
 Like the javascript built-in substring, but ansi aware
+
 **Kind**: static property of <code>[ascii-art-ansi](#ascii-art-ansi)</code>
 
 | Param | Type | Description |
@@ -146,6 +155,7 @@ Like the javascript built-in substring, but ansi aware
 <a name="module_ascii_art_ansi.intersect"></a>
 ### .intersect(ansiString)
 Intersect/overlay any number of strings
+
 **Kind**: static property of <code>[ascii-art-ansi](#ascii-art-ansi)</code>
 
 | Param | Type | Description |
@@ -164,6 +174,7 @@ Intersect/overlay any number of strings
 <a name="module_ascii_art_ansi.interstyle"></a>
 ### .interstyle(ansiString)
 Intersect/overlay any number of strings and include their styles
+
 **Kind**: static property of <code>[ascii-art-ansi](#ascii-art-ansi)</code>
 
 | Param | Type | Description |
@@ -179,6 +190,65 @@ Intersect/overlay any number of strings and include their styles
     });
 ```
 
+<a name="module_ascii_art_ansi.color"></a>
+### .Color(options)
+Intersect/overlay any number of strings and include their styles
+
+**Kind**: static property of <code>[ascii-art-ansi](#ascii-art-ansi)</code>
+
+| Param | Type | Description |
+| --- | --- | --- |
+| options | <code>Object</code> | options |
+
+**Example**
+
+```javascript
+    var color = new Color('#FFFFFF')
+```
+
+<a name="module_ascii_art_ansi.color.code"></a>
+### .Color.code(value)
+Compute the code for the given hex color (closest within the active palette)
+
+**Kind**: static property of <code>[ascii-art-ansi/color](#module_ascii_art_ansi.color)</code>
+
+| Param | Type | Description |
+| --- | --- | --- |
+| value | <code>string</code> | the hex value color of the color |
+
+**Example**
+
+```javascript
+    var ansiCode = Color.code('#FF0000');
+```
+
+<a name="module_ascii_art_ansi.color.name"></a>
+### .Color.name(value)
+Compute the code for the given named color (closest within the active palette)
+
+**Kind**: static property of <code>[ascii-art-ansi/color](#module_ascii_art_ansi.color)</code>
+
+| Param | Type | Description |
+| --- | --- | --- |
+| value | <code>string</code> | the name of the color |
+
+**Example**
+
+```javascript
+    var ansiCode = Color.code('#FF0000');
+```
+
+<a name="module_ascii_art_ansi.color.is256"></a>
+### .Color.is256
+If set colors will be computed using 256 colors instead of 16
+
+**Kind**: static property of <code>[ascii-art-ansi/color](#module_ascii_art_ansi.color)</code>
+
+**Example**
+
+```javascript
+    Color.is256 = true;
+```
 
 Roadmap
 -------

@@ -56,6 +56,11 @@
         return '\033['+standardCodes[code]+'m';
     }
 
+    Color.named = function(name, cache){
+        var value = standardColors[namedColors.indexOf(name)];
+        return Color.code(value, cache);
+    }
+
     /*AsciiArt.Image.Color.distance = function(r1, g1, b1, r2, g2, b2){
         return (Math.abs(r1-r2)+Math.abs(g1-g2)+Math.abs(b1-b2))/3;
     }//*/
@@ -327,6 +332,8 @@
                 return '\033[100m';
         }
     }
+
+    Color.standardColorNames = namedColors;
 
     return Color;
 }));

@@ -32,15 +32,24 @@
     var parentDir = __dirname.split('/');
     parentDir.pop();
     parentDir = parentDir.join('/');
-
+    var testSuite;
     describe('Ascii Art Ansi Codes', function(){
-        describe('when used synchronously', function(){
+        describe('when used in standard mode', testSuite = function(){
 
             var text = 'blargh';
 
             it('encoding mutates the string', function(){
                 var rendered = ansi.Codes(text, 'red+blink+inverse');
                 rendered.should.not.equal(text); //make sure string has been altered
+            });
+
+            it('256 color encoding mutates the string', function(){
+                var original = color.is256;
+                color.is256 = true;
+                var rendered = ansi.Codes(text, '#6633CC');
+                rendered.should.equal('\u001b[38;5;104m'+text);
+                rendered.should.not.equal(text);
+                color.is256 = original;
             });
 
             it('can strip a ansi string', function(){
@@ -164,6 +173,18 @@
                 });
             });
 
+        });
+
+        describe('when used in 256 color mode', function(){
+            before(function(){
+                color.is256 = true;
+            });
+
+            describe('executes the standard testSuite', testSuite);
+
+            after(function(){
+                color.is256 = false;
+            });
         });
     });
 
