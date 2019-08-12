@@ -2,9 +2,15 @@
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
-        define(['browser-request', 'dirname-shim', '../ansi', 'maplex'], function(request, shim, a){
+        define([
+            'browser-request',
+            'dirname-shim',
+            '../ansi',
+            '../color',
+            'maplex'
+        ], function(request, shim, a, c){
             a.Figlet.fontPath = 'Fonts/'
-            return factory(a, maplex, {
+            return factory(a, c, maplex, {
                 readFile : function(filename, cb){
                     request({
                         url: filename
@@ -16,11 +22,11 @@
             }, should);
         });
     } else if (typeof module === 'object' && module.exports) {
-        module.exports = factory(require('../ansi'),require('maplex'), require('fs'), require('should'));
+        module.exports = factory(require('../ansi'), require('../color'), require('maplex'), require('fs'), require('should'));
     } else {
         throw new Error('global testing not supported!');
     }
-}(this, function(ansi, maplex, fs, should){
+}(this, function(ansi, color, maplex, fs, should){
     var isNode = typeof module === 'object' && module.exports;
 
     var parentDir = __dirname.split('/');
@@ -161,6 +167,38 @@
         });
     });
 
+    describe('Ascii Art Ansi Colors', function(){
+        it('decompose + match closest color in standard mode', function(done){
+            color.of('#A00000').should.deepEqual([ 128, 0, 0 ]);
+            color.channels.web('#A00000').should.deepEqual([ 160, 0, 0 ]);
+            color.of('#F00000').should.deepEqual([ 255, 0, 0 ]);
+            color.channels.web('#F00000').should.deepEqual([ 240, 0, 0 ]);
+            done();
+        });
+
+        it('decompose + match closest color in 256 color mode', function(done){
+            color.is256 = true;
+            color.of('#A00000').should.deepEqual([ 175, 0, 0 ]);
+            color.channels.web('#A00000').should.deepEqual([ 160, 0, 0 ]);
+            color.of('#F00000').should.deepEqual([ 255, 0, 0 ]);
+            color.channels.web('#F00000').should.deepEqual([ 240, 0, 0 ]);
+            color.is256 = false;
+            done()
+        });
+
+        it('color in standard', function(done){
+            color.code('#A00000').should.equal('\033[31m');
+            done();
+        });
+
+        it('color in 256', function(done){
+            color.is256 = true;
+            color.code('#A00000').should.equal('\u001b[38;5;183m');
+            color.code('#770044').should.equal('\u001b[38;5;116m');
+            color.code('#AA0088').should.equal('\u001b[38;5;181m');
+            done();
+        });
+    });
 
     return {};
 }));

@@ -41,6 +41,7 @@ To do anything with it, you'll need to include the library:
   * [.charAt(ansi_string, position)](#module_ascii_art_ansi.charat) ⇒ <code>string</code> (length:1)
   * [.intersect(string1, .. stingN, callback)](#module_ascii_art_ansi.intersect) ⇒ <code>Promise</code> (if callback not present)
   * [.interstyle(string1, .. stingN, callback)](#module_ascii_art_ansi.interstyle) ⇒ <code>Promise</code> (if callback not present)
+* [ascii-art-ansi/color](#module_ascii_art_ansi.color)
 
 <a name="module_ascii_art_ansi.map"></a>
 ### .map(ansiString, handler)

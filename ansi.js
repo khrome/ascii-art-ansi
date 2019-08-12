@@ -1,12 +1,12 @@
 (function (root, factory){
     if(typeof define === 'function' && define.amd){
         // AMD. Register as an anonymous module.
-        define(['maplex'], factory);
+        define(['maplex', './color'], factory);
     }else if (typeof module === 'object' && module.exports){
-        module.exports = factory(require('maplex'));
+        module.exports = factory(require('maplex'), require('./color'));
     }else{
         // Browser globals (root is window)
-        root.AsciiArtAnsi = factory(root.maplex);
+        root.AsciiArtAnsi = factory(root.maplex, root.AsciiArtColor);
     }
 }(this, function(Maplex){
     var AsciiArt = {};
@@ -254,9 +254,7 @@
         "magenta_bg": '\033[45m',
         "cyan_bg"   : '\033[46m',
         "white_bg"  : '\033[47m',
-
         "gray_bg"  : '\033[100m',
-
         "bright_black_bg"  : '\033[100m',
         "bright_red_bg"    : '\033[101m',
         "bright_green_bg"  : '\033[102m',
@@ -267,12 +265,19 @@
         "bright_white_bg"  : '\033[107m'
     };
 
+    AsciiArt.Ansi.is256 = false;
+    AsciiArt.Ansi.isTrueColor = false;
+
     AsciiArt.Ansi.Codes = function(str, color, forceOff) {
         if(!color) return str;
         var color_attrs = color.split("+");
         var ansi_str = "";
         for(var i=0, attr; attr = color_attrs[i]; i++) {
-            ansi_str += codes[attr];
+            if(codes[attr]){
+                ansi_str += codes[attr];
+            }else{
+                ansi_str += "ESC[38;5;#m"
+            }
         }
         ansi_str += str;
         if(forceOff) ansi_str += codes["off"];
