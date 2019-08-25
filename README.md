@@ -235,7 +235,7 @@ Compute the code for the given named color (closest within the active palette)
 **Example**
 
 ```javascript
-    var ansiCode = Color.code('#FF0000');
+    var ansiCode = Color.name('red');
 ```
 
 <a name="module_ascii_art_ansi.color.is256"></a>

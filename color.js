@@ -1,3 +1,4 @@
+var cd = require('color-difference');
 (function (root, factory){
     if(typeof define === 'function' && define.amd){
         // AMD. Register as an anonymous module.
@@ -6,7 +7,7 @@
         module.exports = factory();
     }else{
         // Browser globals (root is window)
-        root.AsciiArtAnsi = factory();
+        root.AsciiArtAnsiColor = factory();
     }
 }(this, function(){
 
@@ -42,17 +43,24 @@
     Color.of = function(value, cache){
         return closest(
             Color.channels.web(value),
-            Color.palette(true),
+            Color.palette(),
+            Color.names()
         )
     }
-
+    var c = {};
     Color.code = function(value, cache){
-        if(value === undefined) return '\033[0m'
-        var code = closestPosition(
-            Color.channels.web(value),
-            Color.palette(true)
-        );
+        if(value === undefined) return '\033[0m';
+        var channels = Color.channels.web(value);
+        var names = c.n || (c.n = Color.names());
+        var code = names.indexOf(value);
+        if(code === -1 ) code = closestPosition(
+            channels,
+            c.p || (c.p = Color.palette()),
+            names
+        )
+        //console.log('CODE', code, Color.palette().length);
         if(Color.is256) return '\033[38;5;'+code+'m';
+        //console.log('NOT ')
         return '\033['+standardCodes[code]+'m';
     }
 
@@ -60,17 +68,104 @@
         var value = standardColors[namedColors.indexOf(name)];
         return Color.code(value, cache);
     }
-
-    /*AsciiArt.Image.Color.distance = function(r1, g1, b1, r2, g2, b2){
-        return (Math.abs(r1-r2)+Math.abs(g1-g2)+Math.abs(b1-b2))/3;
-    }//*/
-    Color.distance = function(r1, g1, b1, r2, g2, b2){
-        return (Math.abs(r1-r2)+Math.abs(g1-g2)+Math.abs(b1-b2)+
-            //add the value change in as well
-0
-            //Math.abs(Math.max(r1, g1, b1)-Math.max(r2, g2, b2))/2
-        )/3 + Math.abs(Math.max(r1, g1, b1)-Math.max(r2, g2, b2))/2;
+    Color.distances = {
+        euclideanDistance : function(r1, g1, b1, r2, g2, b2){
+            return cd.compare(
+                '#'+r1.toString(16)+g1.toString(16)+b1.toString(16),
+                '#'+r2.toString(16)+g2.toString(16)+b2.toString(16),
+                'EuclideanDistance'
+            )
+        },
+        classic : function(r1, g1, b1, r2, g2, b2){
+            return (Math.abs(r1-r2)+Math.abs(g1-g2)+Math.abs(b1-b2))/3;
+        },
+        classicByValue : function(r1, g1, b1, r2, g2, b2){
+            return (Math.abs(r1-r2)+Math.abs(g1-g2)+Math.abs(b1-b2)+
+                Math.abs(Math.max(r1, g1, b1)-Math.max(r2, g2, b2))/2
+            )/3 + Math.abs(Math.max(r1, g1, b1)-Math.max(r2, g2, b2))/2;
+        },
+        CIE76Difference : function(r1, g1, b1, r2, g2, b2){
+            return cd.compare(
+                '#'+r1.toString(16)+g1.toString(16)+b1.toString(16),
+                '#'+r2.toString(16)+g2.toString(16)+b2.toString(16),
+                'CIE76Difference'
+            )
+        },
+        closestByIntensity : function(r1, g1, b1, r2, g2, b2){
+            return ((r1 + r2)/510)*Math.abs(r1-r2) +
+            ((g1 + g2)/510)*Math.abs(g1-g2) +
+            ((b1 + b2)/510)*Math.abs(b1-b2)
+        },
+        rankedChannel : function(r1, g1, b1, r2, g2, b2){
+            var pos = {};
+            if(r1 >= g1 && r1 >= b1){
+                pos.max = 0;
+                if(g1 >= b1){
+                    pos.mid = 1;
+                    pos.min = 2;
+                }else{
+                    pos.mid = 2;
+                    pos.min = 1;
+                }
+            }else{
+                if(g1 >= r1 && g1 >= b1){
+                    pos.max = 1;
+                    if(r1 >= b1){
+                        pos.mid = 0;
+                        pos.min = 2;
+                    }else{
+                        pos.mid = 2;
+                        pos.min = 0;
+                    }
+                }else{
+                    pos.max = 2;
+                    if(r1 >= g1){
+                        pos.mid = 0;
+                        pos.min = 1;
+                    }else{
+                        pos.mid = 1;
+                        pos.min = 0;
+                    }
+                }
+            }
+            return 4*Math.abs(arguments[pos.max]-arguments[pos.max+3]) +
+                2*Math.abs(arguments[pos.mid]-arguments[pos.mid+3]) +
+                Math.abs(arguments[pos.min]-arguments[pos.min+3])
+        },
+        simple : function(r1, g1, b1, r2, g2, b2){
+            return (r2-r1)^2 + (g2-g1)^2 + (b2-b1)^2;
+        },
+        original: function(r1, g1, b1, r2, g2, b2){
+            return (Math.abs(r1-r2)+Math.abs(g1-g2)+Math.abs(b1-b2))/3;
+        }
     }
+    Color.useDistance = function(type, fetch){
+        if(type.indexOf('+') !== -1){
+            var types = type.split('+');
+            var stack = types.map(function(type){
+                if(type === 'invert'){
+                    return function(r1, g1, b1, r2, g2, b2, agg){
+                        return 1/agg;
+                    }
+                }
+                return Color.useDistance(type, true);
+            });
+            Color.distance = function(r1, g1, b1, r2, g2, b2){
+                return stack.reduce(function(agg, algorithm){
+                    return agg + algorithm(r1, g1, b1, r2, g2, b2, agg);
+                }, 0);
+            }
+            return;
+        }
+        if(!Color.distances[type]) throw new Error(
+            'unknown distance algorithm:'+type
+        );
+        if(fetch){
+            return Color.distances[type];
+        }else Color.distance = Color.distances[type];
+    }
+    Color.useDistance('closestByIntensity');
+
     Color.Colors = function(colorList){
         this.colors = colorList;
     };
@@ -82,6 +177,14 @@
             parseInt("0x"+value.substring(2,4)),
             parseInt("0x"+value.substring(4,6))
         ];
+    }
+    Color.hex = function(rgb){
+        //todo: handle, like, any other format
+        //todo: cache?
+        return '#'+
+            ("0" + rgb[0].toString(16)).slice(-2)+
+            ("0" + rgb[1].toString(16)).slice(-2)+
+            ("0" + rgb[2].toString(16)).slice(-2)
     }
     Color.channels.web = function(item){
         return [
@@ -189,17 +292,22 @@
         return names?names[position]:colors[position];
     };
 
-    var closestPosition = function(color, colors){
+    var closestPosition = function(color, colors, names){
         var distances = colors.map(function(candidate){
-            return (Color.distance)(
+            return Color.distance(
                 color[0], color[1], color[2],
                 candidate[0], candidate[1], candidate[2]
             );
         });
+        distances.forEach(function(item, index){
+            if(!names) return;
+            if(color[0] === color[1] && color[0] === color[2]) return;
+            console.log(color, item, colors[index]);
+        })//*/
         var position;
         var distance;
         distances.forEach(function(thisDistance, pos){
-            if( (!distance) || distance > thisDistance ){
+            if( (!distance) || distance < thisDistance ){
                 distance = thisDistance;
                 position = pos;
             }
@@ -207,38 +315,119 @@
         return position;
     };
 
-    Color.getTerminalColor = function(r, g, b, options){
-        var names = Object.keys(color_profiles.darwin);
-        var colors = names.map(function(name){
-            return color_profiles.darwin[name];
-        });
-        return closest([r, g, b], colors, names, options);
+    Color.palette = function(debug){
+        var colors;
+        if(Color.is256){
+            //console.log('256')
+            colors = ansi256.map(function(color){
+                return Color.channels.web(color)
+            });
+        }else{
+            var terminalColorProfile = Terminal.profiles[Color.terminalType || 'xterm'];
+            var names = Object.keys(terminalColorProfile);
+            colors = names.map(function(name){
+                return terminalColorProfile[name];
+            });
+        }
+        if(debug){
+            var unique = [];
+            var codes = colors.map(function(color){
+                var hex = Color.hex(color)
+                if(unique.indexOf(hex) === -1){
+                    unique.push(hex)
+                }
+                return Color.code(hex)+'█'
+            });
+            console.log('COLORS', "\n", codes.join(''), unique);
+        }
+        return colors;
     }
 
-
-    var color_profiles = {
-        "darwin" : {
-            //30-37 bg@ 40-47
-             "black" : [0, 0, 0],
-             "red" : [194, 54, 33],
-             "green" : [37, 188, 36],
-             "yellow" : [173, 173, 39],
-             "blue" : [73, 46, 225],
-             "magenta": [211, 56, 211],
-             "cyan": [51, 187, 200],
-             "white": [203, 204, 205],
-             //\038[2;r;g;bm
-             //90-97 bg@ 100-107
-             "bright_black": [129, 131, 131],
-             "bright_red": [252,57,31],
-             "bright_green": [49, 231, 34],
-             "bright_yellow": [234, 236, 35],
-             "bright_blue": [88, 51, 255],
-             "bright_magenta": [249, 53, 248],
-             "bright_cyan": [20, 240, 240],
-             "bright_white": [233, 235, 235]
+    Color.names = function(){
+        var colors;
+        if(Color.is256){
+            colors = ansi256;
+        }else{
+            var terminalColorProfile = Terminal.profiles[Color.terminalType || 'xterm'];
+            colors = Object.keys(terminalColorProfile);
         }
-    };
+        return colors;
+    }
+    var palette;
+    var colorNames;
+
+    var seen = [];
+
+    Color.getTerminalColor = function(r, g, b, options){
+        var colors = palette || (palette = Color.palette(true));
+        var names = colorNames || (colorNames = Color.names());
+        var c =  closest([r, g, b], colors, names, options);
+        if(seen.indexOf(c) === -1){
+            seen.push(c);
+            console.log('SEEN', c, seen);
+        }
+        //console.log('?', c, [r, g, b], colors, names, options)
+        return c;
+    }
+
+    var Terminal = {
+        profiles : {
+            "darwin" : {
+                 "black" : [0, 0, 0],
+                 "red" : [194, 54, 33],
+                 "green" : [37, 188, 36],
+                 "yellow" : [173, 173, 39],
+                 "blue" : [73, 46, 225],
+                 "magenta": [211, 56, 211],
+                 "cyan": [51, 187, 200],
+                 "white": [203, 204, 205],
+                 "bright_black": [129, 131, 131],
+                 "bright_red": [252,57,31],
+                 "bright_green": [49, 231, 34],
+                 "bright_yellow": [234, 236, 35],
+                 "bright_blue": [88, 51, 255],
+                 "bright_magenta": [249, 53, 248],
+                 "bright_cyan": [20, 240, 240],
+                 "bright_white": [233, 235, 235]
+            },
+            "vga" : {
+                 "black" : [0, 0, 0],
+                 "red" : [170, 0, 0],
+                 "green" : [0, 170, 0],
+                 "yellow" : [170, 85, 0],
+                 "blue" : [0, 0, 170],
+                 "magenta": [170, 0, 170],
+                 "cyan": [0, 170, 170],
+                 "white": [170, 170, 170],
+                 "bright_black": [85, 85, 85],
+                 "bright_red": [255,85,85],
+                 "bright_green": [85,255,85],
+                 "bright_yellow": [255,255,85],
+                 "bright_blue": [85,85,255],
+                 "bright_magenta": [255,85,255],
+                 "bright_cyan": [85,255,255],
+                 "bright_white": [255,255,255]
+            },
+            "xterm" : {
+                 "black" : [0, 0, 0],
+                 "red" : [205, 0, 0],
+                 "green" : [0, 205, 0],
+                 "yellow" : [205, 205, 0],
+                 "blue" : [0, 0, 238],
+                 "magenta": [205, 0, 205],
+                 "cyan": [0, 205, 205],
+                 "white": [229, 229, 229],
+                 "bright_black": [127, 127, 127],
+                 "bright_red": [255,0,0],
+                 "bright_green": [0,255,0],
+                 "bright_yellow": [255,255,0],
+                 "bright_blue": [92,92,255],
+                 "bright_magenta": [255,0,255],
+                 "bright_cyan": [0,255,255],
+                 "bright_white": [255,255,255]
+            }
+        }
+    }
 
     //30-37
     var namedColors = [
