@@ -33,6 +33,26 @@
     parentDir.pop();
     parentDir = parentDir.join('/');
     var testSuite;
+
+    var coloredHTMLColor = function(c){
+        var index = color.ansi256.indexOf(c);
+        return index !== -1 ? '\033[38;5;'+index+'m'+c+'\033[0m':'?'+c.substring(1);
+    }
+
+    var equalColors = function(a, b, noThrow){
+        if(typeof a !== 'string') throw new Error('requires hex string!');
+        if(typeof b !== 'string') throw new Error('requires hex string!');
+        if(a.toLowerCase() != b.toLowerCase()){
+            if(!noThrow) throw new Error(
+                'expected '+
+                coloredHTMLColor(a.toLowerCase())+
+                ' to be '+
+                coloredHTMLColor(b.toLowerCase())
+            );
+            return false;
+        }else return true;
+    }
+
     describe('Ascii Art Ansi Codes', function(){
         describe('when used in standard mode', testSuite = function(){
 
@@ -47,7 +67,7 @@
                 var original = color.is256;
                 color.is256 = true;
                 var rendered = ansi.Codes(text, '#6633CC');
-                rendered.should.equal('\u001b[38;5;104m'+text);
+                rendered.should.equal('\u001b[38;5;86m'+text);
                 rendered.should.not.equal(text);
                 color.is256 = original;
             });
@@ -189,34 +209,39 @@
     });
 
     describe('Ascii Art Ansi Colors', function(){
-        it('decompose + match closest color in standard mode', function(done){
-            color.of('#A00000').should.deepEqual([ 128, 0, 0 ]);
-            color.channels.web('#A00000').should.deepEqual([ 160, 0, 0 ]);
-            color.of('#F00000').should.deepEqual([ 255, 0, 0 ]);
-            color.channels.web('#F00000').should.deepEqual([ 240, 0, 0 ]);
+        
+        it('color encode/decode is symmetric', function(done){
+            ['#AC0243'].forEach(function(testColor){
+                color.hex(
+                    color.channels.web(testColor)
+                ).should.equal(testColor.toLowerCase());
+            });
             done();
         });
 
-        it('decompose + match closest color in 256 color mode', function(done){
+        it('colors match to offsets of their hex in standard', function(done){
+            color.standardColors.forEach(function(testColor){
+                var offset = testColor.substring(0,6)+(
+                    testColor.substring(6,7) === '0'?'1':'e'
+                );
+                equalColors(testColor, color.for(offset) );
+            });
+            done();
+        });
+
+        it('colors match to offsets of their hex in 256', function(done){
+            //color.debug = true;
             color.is256 = true;
-            color.of('#A00000').should.deepEqual([ 175, 0, 0 ]);
-            color.channels.web('#A00000').should.deepEqual([ 160, 0, 0 ]);
-            color.of('#F00000').should.deepEqual([ 255, 0, 0 ]);
-            color.channels.web('#F00000').should.deepEqual([ 240, 0, 0 ]);
+            failed = 0;
+            color.ansi256.forEach(function(testColor, i){
+                var offset = testColor.substring(0,6)+(
+                    testColor.substring(6,7) === '0'?'1':'e'
+                );
+                var eq = equalColors(testColor, color.for(offset), true);
+                if(!eq) failed++;
+            });
+            failed.should.not.be.above(5);
             color.is256 = false;
-            done()
-        });
-
-        it('color in standard', function(done){
-            color.code('#A00000').should.equal('\033[31m');
-            done();
-        });
-
-        it('color in 256', function(done){
-            color.is256 = true;
-            color.code('#A00000').should.equal('\u001b[38;5;183m');
-            color.code('#770044').should.equal('\u001b[38;5;116m');
-            color.code('#AA0088').should.equal('\u001b[38;5;181m');
             done();
         });
     });

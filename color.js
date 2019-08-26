@@ -47,20 +47,27 @@ var cd = require('color-difference');
             Color.names()
         )
     }
+
+    Color.for = function(value){ //take hex, return transformed hex
+        var c = Color.of(value);
+        if(typeof c === 'string' && c[0] === '#') return c;
+        return Color.hex(c)
+    }
     var c = {};
     Color.code = function(value, cache){
         if(value === undefined) return '\033[0m';
-        var channels = Color.channels.web(value);
-        var names = c.n || (c.n = Color.names());
+        var channels = Array.isArray(value)?value:Color.channels.web(value);
+        if(Color.isTrueColor){
+            return '\033[38;2;'+channels[0]+';'+channels[1]+';'+channels[2]+'m';
+        }
+        var names = Color.names();
         var code = names.indexOf(value);
         if(code === -1 ) code = closestPosition(
             channels,
-            c.p || (c.p = Color.palette()),
+            Color.palette(),
             names
         )
-        //console.log('CODE', code, Color.palette().length);
         if(Color.is256) return '\033[38;5;'+code+'m';
-        //console.log('NOT ')
         return '\033['+standardCodes[code]+'m';
     }
 
@@ -78,6 +85,14 @@ var cd = require('color-difference');
         },
         classic : function(r1, g1, b1, r2, g2, b2){
             return (Math.abs(r1-r2)+Math.abs(g1-g2)+Math.abs(b1-b2))/3;
+        },
+        ratioDistance : function(r1, g1, b1, r2, g2, b2){
+            var t1 = r1 + g1 + b1;
+            var t2 = r2 + g2 + b2;
+            var rd = Math.abs((r1/t1) - (r2/t2))
+            var gd = Math.abs((g1/t1) - (g2/t2))
+            var bd = Math.abs((b1/t1) - (b2/t2))
+            return rd + gd + bd;
         },
         classicByValue : function(r1, g1, b1, r2, g2, b2){
             return (Math.abs(r1-r2)+Math.abs(g1-g2)+Math.abs(b1-b2)+
@@ -164,7 +179,7 @@ var cd = require('color-difference');
             return Color.distances[type];
         }else Color.distance = Color.distances[type];
     }
-    Color.useDistance('closestByIntensity');
+    Color.useDistance('closestByIntensity+classicByValue');
 
     Color.Colors = function(colorList){
         this.colors = colorList;
@@ -181,6 +196,12 @@ var cd = require('color-difference');
     Color.hex = function(rgb){
         //todo: handle, like, any other format
         //todo: cache?
+        //todo: Return terminal colors?
+        if(typeof rgb === 'string'){
+            var index = namedColors.indexOf(rgb);
+            if(index === -1) return;
+            else return standardColors[index];
+        }
         return '#'+
             ("0" + rgb[0].toString(16)).slice(-2)+
             ("0" + rgb[1].toString(16)).slice(-2)+
@@ -192,99 +213,6 @@ var cd = require('color-difference');
             parseInt(item.substring(3, 5), 16),
             parseInt(item.substring(5, 7), 16)
         ];
-    }
-    Color.Colors.prototype.average = function(callback){
-        var total = ob.colors.map(function(color){
-            return Color.channels(color);
-        }).reduce(function(a, b){
-            return [a[0]+b[0], a[1]+b[1], a[2]+b[2]];
-        });
-        var result = [
-            Math.floor(total[0]/this.colors.length),
-            Math.floor(total[1]/this.colors.length),
-            Math.floor(total[2]/this.colors.length),
-        ];
-        this.colors = result[0].toString(16)+
-            result[1].toString(16)+
-            result[2].toString(16);
-        if(callback) callback();
-    }
-    Color.Colors.prototype.reduceTo = function(count, callback){
-        var done = function(){ if(callback) callback() };
-        if(count === 1) this.average(done);
-        else this.shrink({count: this.colors.length - count}, done);
-
-    }
-
-    // glyxel: part glyph, part pixel. (Implies a fixed width grid)
-    Color.Colors.prototype.renderGlyxel = function(text, color, mode){
-        switch(mode){
-            case '256':
-                break;
-            case 'true':
-                break;
-            case 'html':
-                break;
-            default:
-                //var closestColorInGamut = this.
-                var index = commonColors.indexOf(color);
-                //var offset =
-                return '\033[100m';
-        }
-    }
-
-    Color.Colors.prototype.shrink = function(options, callback){
-        if(options && options.count){
-            var cache = {};
-            for(var lcv=0; lcv < options.count || 1; lcv++) this.shrink({
-                weights : options.weights,
-                cache : cache
-            });
-            if(callback) callback();
-            return;
-        }
-        if(!options.cache) options.cache = {};
-        //todo: lots of caching
-        var occurances = options.occurances || {};
-        var results = this.colors.map(function(thisColor){
-            var theseChannels = Color.channels(thisColor);
-            var minimum = ob.colors.map(function(thatColor){
-                if(options.cache[thisColor+thatColor]) return options.cache[thisColor+thatColor];
-                var thoseChannels = Color.channels(thatColor);
-                var distance = (options.distance || Color.distance)(
-                    theseChannels.concat(thoseChannels)
-                );
-                var result = {
-                    distance : distance,
-                    color : thatColor
-                }
-                options.cache[thisColor+thatColor] = result;
-                return result;
-            }).reduce(function(a, b){
-                if(a.distance < b.distance) return a;
-                else return b;
-            });
-            return {
-                color : thisColor,
-                other : minimum.color,
-                distance : minimum.distance,
-                occurances : occurances[thisColor]
-            }
-        });
-        var minimumDistance;
-        results.forEach(function(result){
-            if( (!minimumDistance) || result.minimumDistance < minimumDistance){
-                minimumDistance = result.minimumDistance;
-            }
-        });
-        var result = results.filter(function(result){
-            result.distance == minimumDistance;
-        }).reduce(function(a, b){
-            return a.occurances > b.occurances?b:a;
-        });
-        var position = this.colors.indexOf(result.color);
-        if(position === -1) throw new Error('could not find color');
-        this.colors.splice(position, 1);
     }
 
     var closest = function(color, colors, names, options){
@@ -302,45 +230,65 @@ var cd = require('color-difference');
         distances.forEach(function(item, index){
             if(!names) return;
             if(color[0] === color[1] && color[0] === color[2]) return;
-            console.log(color, item, colors[index]);
         })//*/
         var position;
         var distance;
         distances.forEach(function(thisDistance, pos){
-            if( (!distance) || distance < thisDistance ){
+            if( (!distance) || distance > thisDistance ){
                 distance = thisDistance;
                 position = pos;
             }
         });
+        if(Color.debug){
+            //if(colors.length < 255) throw new Error('in 256 color there are only '+colors.length+' colors!')
+            //console.log( (new Error()).stack )
+            distances.forEach(function(item, index){
+                var target = Color.hex(color);
+                var comperable = Color.hex(colors[index]);
+                var index = ansi256.indexOf(comperable);
+                console.log('['+target+'] '+item+' ['+(
+                    index !== -1 ? '\033[38;5;'+ansi256.indexOf(comperable)+'m':' ?? '
+                )+comperable+Color.code()+']'+(index === position?' <- ':''));
+            });
+        }
         return position;
     };
+
 
     Color.palette = function(debug){
         var colors;
         if(Color.is256){
-            //console.log('256')
             colors = ansi256.map(function(color){
                 return Color.channels.web(color)
             });
         }else{
-            var terminalColorProfile = Terminal.profiles[Color.terminalType || 'xterm'];
-            var names = Object.keys(terminalColorProfile);
-            colors = names.map(function(name){
-                return terminalColorProfile[name];
+            if(Color.terminalType){
+                var terminalColorProfile = Terminal.profiles[Color.terminalType || 'xterm'];
+                var names = Object.keys(terminalColorProfile);
+                colors = names.map(function(name){
+                    return terminalColorProfile[name];
+                });
+            }else colors = standardColors.map(function(color){
+                return Color.channels.web(color)
             });
-        }
-        if(debug){
-            var unique = [];
-            var codes = colors.map(function(color){
-                var hex = Color.hex(color)
-                if(unique.indexOf(hex) === -1){
-                    unique.push(hex)
-                }
-                return Color.code(hex)+'█'
-            });
-            console.log('COLORS', "\n", codes.join(''), unique);
         }
         return colors;
+    }
+
+    Color.palette.render = function(highlighted, colors){
+        if(!colors) colors = Color.palette();
+        var unique = [];
+        var codes = colors.map(function(color){
+            var hex = Color.hex(color)
+            if(unique.indexOf(hex) === -1){
+                unique.push(hex)
+            }
+            if(hex === (highlighted||'').toLowerCase()) return Color.code(hex)+'█'+"\n"
+            else return Color.code(hex)+'■['+
+                (highlighted && Color.channels.web(highlighted))
+            +'] => ['+Color.channels.web(hex).toString()+"]\n"
+        });
+        return codes.join('');
     }
 
     Color.names = function(){
@@ -358,9 +306,9 @@ var cd = require('color-difference');
 
     var seen = [];
 
-    Color.getTerminalColor = function(r, g, b, options){
-        var colors = palette || (palette = Color.palette(true));
-        var names = colorNames || (colorNames = Color.names());
+    /*Color.getTerminalColor = function(r, g, b, options){
+        var colors = Color.palette(true);
+        var names =  Color.names();
         var c =  closest([r, g, b], colors, names, options);
         if(seen.indexOf(c) === -1){
             seen.push(c);
@@ -368,7 +316,7 @@ var cd = require('color-difference');
         }
         //console.log('?', c, [r, g, b], colors, names, options)
         return c;
-    }
+    }*/
 
     var Terminal = {
         profiles : {
@@ -493,36 +441,21 @@ var cd = require('color-difference');
         "#ff5f00", "#ff5f5f", "#ff5f87", "#ff5faf", "#ff5fdf", "#ff5fff",
         "#ff0000", "#ff005f", "#ff0087", "#ff00af", "#ff00df", "#ff00ff"
     ];
-
     var ansi256 = (
-        standardColors.concat(greyscale256).concat(color256)
+        [].concat(standardColors).concat(color256).concat(greyscale256)
     );
+    Color.is256 = true;
+    ansi256.forEach((c, i)=>console.log(i+' : '+Color.code(c)+'▣ '+Color.code()+c));
 
-    var ColorTable = function(){
-        this.colors = [];
-    };
+    Color.ansi256 = ansi256;
+    Color.standardColors = standardColors;
 
-    ColorTable.prototype.addColor = function(){
-        //if(this.colors.)
-    }
-
-    ColorTable.prototype.colorAs = function(color, mode){
-        switch(mode){
-            case '256':
-                break;
-            case 'true':
-                break;
-            case 'html':
-                break;
-            default:
-                //var closestColorInGamut = this.
-                var index = commonColors.indexOf(color);
-                //var offset =
-                return '\033[100m';
-        }
-    }
 
     Color.standardColorNames = namedColors;
+    var terminalType;
+    Color.terminalColors = function(){
+
+    }
 
     return Color;
 }));

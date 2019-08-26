@@ -46,6 +46,7 @@ To do anything with it, you'll need to include the library:
     * [Color.code(value)](#module_ascii_art_ansi.color.code) ⇒ <code>string</code>
     * [Color.name(value)](#module_ascii_art_ansi.color.name) ⇒ <code>string</code>
     * [Color.is256](#module_ascii_art_ansi.color.is256) ⇒ <code>boolean</code>
+    * [Color.isTrueColor](#module_ascii_art_ansi.color.isTrueColor) ⇒ <code>boolean</code>
 
 <a name="module_ascii_art_ansi.map"></a>
 ### .map(ansiString, handler)
@@ -240,7 +241,9 @@ Compute the code for the given named color (closest within the active palette)
 
 <a name="module_ascii_art_ansi.color.is256"></a>
 ### .Color.is256
-If set colors will be computed using 256 colors instead of 16
+If set colors will be computed using 256 colors instead of 16.
+Colors are averaged according to a color averaging scheme which can be changed with `Color.useDistance(name);`
+where name is one of `euclideanDistance`, `classic`, `ratioDistance`, `classicByValue`, `CIE76Difference`, `closestByIntensity`, `rankedChannel`, `simple`, `original`
 
 **Kind**: static property of <code>[ascii-art-ansi/color](#module_ascii_art_ansi.color)</code>
 
@@ -248,6 +251,18 @@ If set colors will be computed using 256 colors instead of 16
 
 ```javascript
     Color.is256 = true;
+```
+
+<a name="module_ascii_art_ansi.color.isTrueColor"></a>
+### .Color.isTrueColor
+If set colors will be computed using millions of colors
+
+**Kind**: static property of <code>[ascii-art-ansi/color](#module_ascii_art_ansi.color)</code>
+
+**Example**
+
+```javascript
+    Color.isTrueColor = true;
 ```
 
 Roadmap
