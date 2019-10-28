@@ -444,8 +444,8 @@ var cd = require('color-difference');
     var ansi256 = (
         [].concat(standardColors).concat(color256).concat(greyscale256)
     );
-    Color.is256 = true;
-    ansi256.forEach((c, i)=>console.log(i+' : '+Color.code(c)+'▣ '+Color.code()+c));
+    //Color.is256 = true;
+    //ansi256.forEach((c, i)=>console.log(i+' : '+Color.code(c)+'▣ '+Color.code()+c));
 
     Color.ansi256 = ansi256;
     Color.standardColors = standardColors;

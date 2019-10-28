@@ -273,10 +273,10 @@
         var color_attrs = color.split("+");
         var ansi_str = "";
         for(var i=0, attr; attr = color_attrs[i]; i++) {
-            if(Color.standardColorNames.indexOf(attr) != -1){
+            if(false && Color.standardColorNames.indexOf(attr) != -1){
                 ansi_str += Color.named(attr)
             }else{
-                if(codes[attr]){
+                if(codes[attr]){ //todo: deprecate and have color package handle
                     ansi_str += codes[attr];
                 }else{
                     if(attr[0] === '#'){
