@@ -11,6 +11,8 @@
 }(this, function(Maplex, Color){
     var AsciiArt = {};
     var parentArt;
+
+    Maplex.Iterable.defaultValue = ' ';
     maplex = new Maplex();
     maplex.convert = function(value){
         return AsciiArt.Ansi.toArray(value);
@@ -18,7 +20,7 @@
 
     styleplex = new Maplex();
     styleplex.convert = function(value){
-        return AsciiArt.Ansi.toArray(value, true);
+        return AsciiArt.Ansi.toObjectArray(value, true);
     }
 
     AsciiArt.Ansi = {
@@ -76,6 +78,15 @@
             });
             return results;
         },
+        toObjectArray :function(value, includeStyles){
+            var results = [];
+            results = AsciiArt.Ansi.map(value, function(chr, styles){
+                chr.styles = styles;
+                return chr;
+            });
+
+            return results;
+        },
         strip :function(value){
             return AsciiArt.Ansi.map(value, function(chr){
                 return chr;
@@ -126,7 +137,7 @@
                     return (
                         agg &&
                         AsciiArt.Ansi.strip(agg).trim()
-                    )?agg:item;
+                    )?agg:item+(item.style?AsciiArt.Ansi.codeRender(item.style):'');
                 }, undefined);
                 return result;
             });
@@ -167,10 +178,12 @@
             args.push(function(mapped){
                 cb(undefined, mapped.join(''));
             });
+            //console.log('FUCK EVERYONE', args);
             maplex.map.apply(maplex, args);
             return result;
         },
-        map :function(value, handler){
+        map :function(value, handler, includeLineEndings){
+            if(!value) throw new Error('cannot map undefined!');
             var lcv = 0;
             var result = '';
             var inEscape = false;
@@ -188,20 +201,19 @@
                 for(; lcv - offset < line.length; lcv++){
                     if(shortcircuit) continue;
                     if(inEscape){
-                        if(line[lcv] == 'm'){
+                        if(line[lcv-offset] == 'm'){
                             inEscape = false;
-                            if(code === '0') codes = [];
-                            else codes.push(code);
+                            codes = normalizeStyle([code], codes);
                         }
-                        code += line[lcv];
+                        code += line[lcv-offset];
                     }else{
-                        if(line[lcv] == '\033' && line[lcv+1] == '['){
+                        if(line[lcv- offset] == '\033' && line[lcv- offset+1] == '['){
                             inEscape = true;
                             code = '';
                             lcv++;
                             continue;
                         }
-                        var value = handler(line[lcv - offset], codes, [lineNumber, pos], fullPos, function(){
+                        var value = handler(line[lcv - offset], codes.slice(), [lineNumber, pos], fullPos, function(){
                             shortcircuit = true;
                         }, lcv);
                         fullPos++;
@@ -211,11 +223,15 @@
                         }
                     }
                 }
+                if(includeLineEndings) handler("\n", [], [lineNumber, pos], fullPos, function(){
+                    shortcircuit = true;
+                }, line.length);
                 lines[lineNumber] = newLine;
             }
             return lines.join("\n");
         }
     }
+
 
     var codes = {
         "off"       : '\033[0m',
@@ -268,6 +284,7 @@
     AsciiArt.Ansi.is256 = false;
     AsciiArt.Ansi.isTrueColor = false;
 
+
     AsciiArt.Ansi.Codes = function(str, color, forceOff) {
         if(!color) return str;
         var color_attrs = color.split("+");
@@ -298,6 +315,41 @@
     AsciiArt.Ansi.setInstance = function(art){
         parentArt = art;
     }
+
+    var normalizeStyle = function(newStyles, oldStyles){
+        //todo: WTF is this value???
+        if(newStyles[0] === 'undefinedundefinedundefinedundefinedundefinedundefinedundefinedundefined'){
+            return oldStyles;
+        }
+        if(!newStyles[0]) return oldStyles;
+        newStyles.forEach(function(style){
+            Object.keys(is.it).forEach(function(type){
+                if(is.it[type](style)){
+                    //we need to remove other styles of this type from oldStyles
+                    oldStyles.slice().reverse().forEach(function(style, index){ //backwards on a copy, because... slice
+                        if(is.it[type](style)){
+                            oldStyles.splice(oldStyles.length-index-1, 1); //delete it
+                        }
+                    });
+                }
+            });
+        })
+        return oldStyles.concat(newStyles);
+    }
+
+    var is = {it:{
+        foregroundcolor : function(style){
+            return style.indexOf('38;5;') === 0 || //256 color
+                style.indexOf('38;2;') === 0 || //millions
+                style.indexOf('3') === 0; //16 color
+        },
+        backgroundcolor : function(style){
+            return style.indexOf('48;5;') === 0 || //256 color
+                style.indexOf('48;2;') === 0 || //millions
+                style.indexOf('4') === 0; //16 color
+        },
+    }};
+
     var ansi256 = [
         //standard ansi colors
         "#000000", "#800000", "#008000", "#808000", "#000080", "#800080",
