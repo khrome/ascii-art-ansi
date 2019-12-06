@@ -77,7 +77,7 @@ var dimensions = function(model){
 Canvas.prototype.drawOnto = function(str, offX, offY, isTransparent){
     if(offX < 0 || offY < 0){ //negatives for positioning from opposite margin
         var dims = dimensions(str);
-        if(offX < 0) offX = this.width + offX - dims.width-1;
+        if(offX < 0) offX = this.width + offX - dims.width +1;
         if(offY < 0) offY = this.height + offY - dims.height +1;
     }
     if(!offX) offX = 0;

@@ -178,7 +178,6 @@
             args.push(function(mapped){
                 cb(undefined, mapped.join(''));
             });
-            //console.log('FUCK EVERYONE', args);
             maplex.map.apply(maplex, args);
             return result;
         },
@@ -341,12 +340,14 @@
         foregroundcolor : function(style){
             return style.indexOf('38;5;') === 0 || //256 color
                 style.indexOf('38;2;') === 0 || //millions
-                style.indexOf('3') === 0; //16 color
+                style.indexOf('3') === 0 || //16 color
+                style.indexOf('9') === 0; //16 color, bright
         },
         backgroundcolor : function(style){
             return style.indexOf('48;5;') === 0 || //256 color
                 style.indexOf('48;2;') === 0 || //millions
-                style.indexOf('4') === 0; //16 color
+                style.indexOf('4') === 0 || //16 color
+                style.indexOf('10') === 0; //16 color, bright
         },
     }};
 
