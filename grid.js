@@ -42,15 +42,20 @@ Canvas.prototype.toString = function(){
             item = this.data[y][x] || {chr:' '};
             result += ansi.codeRender(item.styles)+item.chr;
         }
-        result += "\n";
+        result += "\033[0m\n";
     }
     return result;
 }
 
-Canvas.prototype.setValue = function(x, y, value){
+Canvas.prototype.setValue = function(x, y, value, isAStyleMerge){
     if(x > this.width || !this.data[y]){
         //throw new Error('set outside bounds('+x+', '+y+')['+this.height+', '+this.width+']');
         return;
+    }
+    if(isAStyleMerge){
+        value.styles = (this.data[y][x] && this.data[y][x].styles)?
+            this.data[y][x].styles.concat(value.styles):
+            value.styles;
     }
     this.data[y][x] = value;
 }
@@ -74,7 +79,7 @@ var dimensions = function(model){
     };
 }
 
-Canvas.prototype.drawOnto = function(str, offX, offY, isTransparent){
+Canvas.prototype.drawOnto = function(str, offX, offY, isTransparent, mergeStyles){
     if(offX < 0 || offY < 0){ //negatives for positioning from opposite margin
         var dims = dimensions(str);
         if(offX < 0) offX = this.width + offX - dims.width +1;
@@ -92,7 +97,7 @@ Canvas.prototype.drawOnto = function(str, offX, offY, isTransparent){
         }else{
             if(chr && !(isTransparent && !chr.trim())) ob.setValue(offX+x, offY+y, {
                 chr:chr, styles:styles
-            });
+            }, mergeStyles);
             x++;
         }
     }, true);

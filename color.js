@@ -71,6 +71,40 @@ var cd = require('color-difference');
         return '\033['+standardCodes[code]+'m';
     }
 
+    Color.backgroundCode = function(value, cache){
+        if(value === undefined) return '\033[0m';
+        var channels = Array.isArray(value)?value:Color.channels.web(value);
+        if(Color.isTrueColor){
+            return '\033[48;2;'+channels[0]+';'+channels[1]+';'+channels[2]+'m';
+        }
+        var names = Color.names();
+        var code = names.indexOf(value);
+        if(code === -1 ) code = closestPosition(
+            channels,
+            Color.palette(),
+            names
+        )
+        if(Color.is256) return '\033[48;5;'+code+'m';
+        return '\033['+backgroundCodes[code]+'m';
+    }
+
+    Color.codes = function(value, cache){
+        if(value === undefined) return '\033[0m';
+        var channels = Array.isArray(value)?value:Color.channels.web(value);
+        if(Color.isTrueColor){
+            return '\033[38;2;'+channels[0]+';'+channels[1]+';'+channels[2]+'m';
+        }
+        var names = Color.names();
+        var code = names.indexOf(value);
+        if(code === -1 ) code = closestPosition(
+            channels,
+            Color.palette(),
+            names
+        )
+        if(Color.is256) return '\033[38;5;'+code+'m';
+        return '\033['+standardCodes[code]+'m';
+    }
+
     Color.named = function(name, cache){
         var value = standardColors[namedColors.indexOf(name)];
         return Color.code(value, cache);
@@ -385,6 +419,12 @@ var cd = require('color-difference');
     ]
 
     var standardCodes = [ //standard ansi colors in 256 color sequence
+        "40", "41", "42", "43", "44", "45",
+        "46", "47", "100", "101", "102", "103",
+        "104", "105", "106", "107"
+    ];
+
+    var backgroundCodes = [ //standard ansi colors in 256 color sequence
         "30", "31", "32", "33", "34", "35",
         "36", "37", "90", "91", "92", "93",
         "94", "95", "96", "97"
