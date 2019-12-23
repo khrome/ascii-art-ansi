@@ -32,6 +32,7 @@
             return count;
         },
         codeRender :function(codes){
+            if(codes === undefined) return '';
             var result = codes.map(function(code, index){
                 return '\033['+code+'m';
             }).join('');

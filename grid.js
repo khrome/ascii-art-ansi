@@ -1,6 +1,7 @@
 var ansi = require('./ansi')
 
-var Canvas = function(str){
+var Canvas = function(str, len){
+    var size = len || 1;
     this.data = [];
     var ob = this;
     var row = 0;
@@ -14,9 +15,13 @@ var Canvas = function(str){
             w=0;
         }else{
             if(!ob.data[row]) ob.data[row] = [];
-            ob.data[row].push({
-                chr:chr, styles:styles.slice()
-            });
+            if(pos % size === 0){
+                ob.data[row].push({
+                    chr:chr, styles:styles.slice()
+                });
+            }else{
+                ob.data[row][ob.data[row].length-1].chr += chr;
+            }
             w++;
         }
     }, true);

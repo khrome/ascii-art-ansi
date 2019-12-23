@@ -84,7 +84,9 @@ var cd = require('color-difference');
             Color.palette(),
             names
         )
-        if(Color.is256) return '\033[48;5;'+code+'m';
+        if(Color.is256){
+            return '\033[48;5;'+code+'m';
+        }
         return '\033['+backgroundCodes[code]+'m';
     }
 
