@@ -103,7 +103,6 @@ var cd = require('color-difference');
             Color.palette(),
             names
         )
-        console.log('?', code)
         if(Color.is256) return '\033[38;5;'+code+'m';
         return '\033['+standardCodes[code]+'m';
     }
