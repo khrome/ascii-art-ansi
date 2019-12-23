@@ -67,13 +67,11 @@ var cd = require('color-difference');
             Color.palette(),
             names
         )
-        console.log('?', channels, code)
         if(Color.is256) return '\033[38;5;'+code+'m';
         return '\033['+standardCodes[code]+'m';
     }
 
     Color.backgroundCode = function(value, cache){
-        console.log('**', channels, code)
         if(value === undefined) return '\033[0m';
         var channels = Array.isArray(value)?value:Color.channels.web(value);
         if(Color.isTrueColor){
