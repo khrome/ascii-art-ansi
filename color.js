@@ -1,15 +1,14 @@
-var cd = require('color-difference');
 (function (root, factory){
     if(typeof define === 'function' && define.amd){
         // AMD. Register as an anonymous module.
-        define([], factory);
+        define(['color-difference'], factory);
     }else if (typeof module === 'object' && module.exports){
-        module.exports = factory();
+        module.exports = factory(require('color-difference'));
     }else{
         // Browser globals (root is window)
-        root.AsciiArtAnsiColor = factory();
+        root.AsciiArtAnsiColor = factory(window.colorDifference);
     }
-}(this, function(){
+}(this, function(cd){
 
     var Color = function(value){
         this.id = Array.prototype.join.apply(arguments);
