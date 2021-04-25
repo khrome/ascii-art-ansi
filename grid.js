@@ -6,7 +6,7 @@
         module.exports = factory(require('./ansi'));
     }else{
         // Browser globals (root is window)
-        root.AsciiArtAnsiColor = factory(window.AsciiArtAnsi);
+        root.AsciiArtAnsiGrid = factory(window.AsciiArtAnsi);
     }
 }(this, function(ansi){
     var Canvas = function(str, len){
