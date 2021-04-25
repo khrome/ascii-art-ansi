@@ -339,18 +339,20 @@
 
     var is = {it:{
         foregroundcolor : function(style){
-            return style.indexOf('38;5;') === 0 || //256 color
-                style.indexOf('38;2;') === 0 || //millions
-                style.indexOf('3') === 0 || //16 color
-                style.indexOf('9') === 0; //16 color, bright
+            return style.startsWith('38;5;') || //256 color
+                style.startsWith('38;2;') || //millions
+                style.startsWith('3') || //16 color
+                style.startsWith('9'); //16 color, bright
         },
         backgroundcolor : function(style){
-            return style.indexOf('48;5;') === 0 || //256 color
-                style.indexOf('48;2;') === 0 || //millions
-                style.indexOf('4') === 0 || //16 color
-                style.indexOf('10') === 0; //16 color, bright
+            return style.startsWith('48;5;') || //256 color
+                style.startsWith('48;2;') || //millions
+                style.startsWith('4') || //16 color
+                style.startsWith('10'); //16 color, bright
         },
     }};
+
+    AsciiArt.Ansi.is = is;
 
     var ansi256 = [
         //standard ansi colors
