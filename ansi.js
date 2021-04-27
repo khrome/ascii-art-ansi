@@ -223,7 +223,7 @@
                         }
                     }
                 }
-                if(includeLineEndings) handler("\n", [], [lineNumber, pos], fullPos, function(){
+                if(includeLineEndings) newLine += handler("\n", [], [lineNumber, pos], fullPos, function(){
                     shortcircuit = true;
                 }, line.length);
                 lines[lineNumber] = newLine;

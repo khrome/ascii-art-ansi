@@ -10,17 +10,7 @@
     }
 }(this, function(cd){
 
-    var Color = function(value){
-        this.id = Array.prototype.join.apply(arguments);
-        if(typeof value == 'string'){
-
-            if(value[0] === '#'){
-
-            }else{
-                throw new Error('only hex values and short-names are currently supported')
-            }
-        }
-    };
+    var Color = {};
     var palette;
 
     Color.is256 = false;
@@ -104,6 +94,32 @@
         )
         if(Color.is256) return '\033[38;5;'+code+'m';
         return '\033['+standardCodes[code]+'m';
+    }
+
+    //standardCodes, namedColors, backgroundCodes, standardColors;
+    Color.value = function(code, cache){
+        var i;
+        if(Color.is256){
+            if(code.startsWith('38;5') || code.startsWith('48;5')){
+                var colorIndex = parseInt(code.split(';').pop());
+                if(ansi256[colorIndex]) return ansi256[colorIndex];
+            }
+        }
+        if(Color.isTrueColor){
+            if(code.startsWith('38;2') || code.startsWith('48;2')){
+                var parts = code.split(';');
+                var b = parseInt(parts.pop());
+                var g = parseInt(parts.pop());
+                var r = parseInt(parts.pop());
+                return Color.hex([r, g, b]);
+                //var colorIndex = parseInt(code.split(';').pop());
+                //if(ansi256[colorIndex]) return ansi256[colorIndex];
+            }
+        }
+        if((i=namedColors.indexOf(code)) !== -1) return standardColors[i];
+        if((i=standardCodes.indexOf(code)) !== -1) return standardColors[i];
+        if((i=backgroundCodes.indexOf(code)) !== -1) return standardColors[i];
+        if((i=standardColors.indexOf(code)) !== -1) return standardColors[i];
     }
 
     Color.named = function(name, cache){
