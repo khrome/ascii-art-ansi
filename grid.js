@@ -93,6 +93,10 @@
         };
     }
 
+    var isEmpty = function(chr){
+        return (!chr.trim() || chr.trim() === '⠀');
+    }
+
     Canvas.prototype.drawOnto = function(str, offX, offY, isTransparent, mergeStyles){
         if(offX < 0 || offY < 0){ //negatives for positioning from opposite margin
             var dims = dimensions(str);
@@ -109,7 +113,7 @@
                 y++;
                 x=0;
             }else{
-                if(chr && !(isTransparent && !chr.trim())) ob.setValue(offX+x, offY+y, {
+                if(chr && (!(isTransparent && isEmpty(chr) ))) ob.setValue(offX+x, offY+y, {
                     chr:chr, styles:styles
                 }, mergeStyles);
                 x++;

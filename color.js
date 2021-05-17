@@ -1,17 +1,38 @@
+var cache;
 (function (root, factory){
     if(typeof define === 'function' && define.amd){
         // AMD. Register as an anonymous module.
-        define(['color-difference'], factory);
+        define(['color-difference', 'color'], factory);
     }else if (typeof module === 'object' && module.exports){
-        module.exports = factory(require('color-difference'));
+        module.exports = factory(require('color-difference'), require('color'));
     }else{
         // Browser globals (root is window)
-        root.AsciiArtAnsiColor = factory(window.colorDifference);
+        root.AsciiArtAnsiColor = factory(window.colorDifference, window.color);
     }
-}(this, function(cd){
-
+}(this, function(cd, colorLib){
+    if(cache) return cache;
     var Color = {};
     var palette;
+
+    //Color.debug = true;
+
+    Color.depth = function(v){
+        switch(parseInt(v)){
+            case 4:
+                Color.is256 = false;
+                Color.isTrueColor = false;
+                break;
+            case 8:
+                Color.is256 = true;
+                Color.isTrueColor = false;
+                break;
+            case 32:
+                Color.is256 = false;
+                Color.isTrueColor = true;
+                break;
+            default : throw new Error('Unsupported color bit depth: '+v);
+        }
+    }
 
     Color.is256 = false;
     Color.isTrueColor = false;
@@ -43,19 +64,24 @@
         return Color.hex(c)
     }
     var c = {};
-    Color.code = function(value, cache){
-        if(value === undefined) return '\033[0m';
+    Color.code = function(value, opts){
+        var options = opts || {};
+        if(value === undefined){
+            return '\033[0m';
+        }
         var channels = Array.isArray(value)?value:Color.channels.web(value);
         if(Color.isTrueColor){
             return '\033[38;2;'+channels[0]+';'+channels[1]+';'+channels[2]+'m';
         }
         var names = Color.names();
         var code = names.indexOf(value);
-        if(code === -1 ) code = closestPosition(
-            channels,
-            Color.palette(),
-            names
-        )
+        if(code === -1 ){
+            code = closestPosition(
+                channels,
+                Color.palette(),
+                names
+            )
+        }
         if(Color.is256) return '\033[38;5;'+code+'m';
         return '\033['+standardCodes[code]+'m';
     }
@@ -68,6 +94,7 @@
         }
         var names = Color.names();
         var code = names.indexOf(value);
+        if(code === -1 )
         if(code === -1 ) code = closestPosition(
             channels,
             Color.palette(),
@@ -118,7 +145,7 @@
         }
         if((i=namedColors.indexOf(code)) !== -1) return standardColors[i];
         if((i=standardCodes.indexOf(code)) !== -1) return standardColors[i];
-        if((i=backgroundCodes.indexOf(code)) !== -1) return standardColors[i];
+        if((i=backgroundCodes.indexOf(code)) !== -1) return backgroundColors[i];
         if((i=standardColors.indexOf(code)) !== -1) return standardColors[i];
     }
 
@@ -126,6 +153,30 @@
         var value = standardColors[namedColors.indexOf(name)];
         return Color.code(value, cache);
     }
+    var byChannel = function(o, fn, fin){
+        var res = {};
+        if(Array.isArray(o)){
+            res.r = fn(o[0].r, o[1].r, 'r', o);
+            res.g = fn(o[0].g, o[1].g, 'g', o);
+            res.b = fn(o[0].b, o[1].b, 'b', o);
+            if(fin) fin(res, o[0].b, o[1].b);
+        }else{
+            res.r = fn(o.r, 'r', o);
+            res.g = fn(o.r, 'g', o);
+            res.b = fn(o.r, 'b', o);
+            if(fin) fin(res, o);
+        }
+        return res;
+    };
+    var signal = function(v){
+        return Math.abs(v);
+    };
+    var delta = function(v1, v2){
+        return v2 - v1;
+    };
+    var gavel = function(r, g, b){ //i, object
+        return {r:r, g:g, b:b};
+    };
     Color.distances = {
         euclideanDistance : function(r1, g1, b1, r2, g2, b2){
             return cd.compare(
@@ -135,15 +186,40 @@
             )
         },
         classic : function(r1, g1, b1, r2, g2, b2){
-            return (Math.abs(r1-r2)+Math.abs(g1-g2)+Math.abs(b1-b2))/3;
+            return Color.distances.original(r1, g1, b1, r2, g2, b2);
+        },
+        minDeviation : function(r1, g1, b1, r2, g2, b2){
+            var o1 = gavel(r1, g1, b1);
+            var o2 = gavel(r2, g2, b2);
+            var d = byChannel([o1, o2], (v1, v2, channel)=>{
+                return signal(delta(v1, v2))
+            });
+            return Math.max(d.r, d.g, d.b)
+        },
+        luminosity : function(r1, g1, b1, r2, g2, b2){
+            var c1 = colorLib.rgb([r1, g1, b1]);
+            var c2 = colorLib.rgb([r2, g2, b2]);
+            return signal(c2.hsl().color[2] - c1.hsl().color[2]);
+        },
+        saturation : function(r1, g1, b1, r2, g2, b2){
+            var c1 = colorLib.rgb([r1, g1, b1]);
+            var c2 = colorLib.rgb([r2, g2, b2]);
+            return signal(c2.hsl().color[1] - c1.hsl().color[1]);
+        },
+        hue : function(r1, g1, b1, r2, g2, b2){
+            var c1 = colorLib.rgb([r1, g1, b1]);
+            var c2 = colorLib.rgb([r2, g2, b2]);
+            return signal(c2.hsl().color[0] - c1.hsl().color[0]);
         },
         ratioDistance : function(r1, g1, b1, r2, g2, b2){
-            var t1 = r1 + g1 + b1;
-            var t2 = r2 + g2 + b2;
-            var rd = Math.abs((r1/t1) - (r2/t2))
-            var gd = Math.abs((g1/t1) - (g2/t2))
-            var bd = Math.abs((b1/t1) - (b2/t2))
-            return rd + gd + bd;
+            var o1 = gavel(r1, g1, b1);
+            o1.t = r1 + g1 + b1 || 0.000001;
+            var o2 = gavel(r2, g2, b2);
+            o2.t = r2 + g2 + b2 || 0.000001;
+            var d = byChannel([o1, o2], (v1, v2, channel)=>{
+                return signal(delta(v1/o1.t, o2.t===0?0:v2/o2.t));
+            });
+            return d.r + d.g + d.b;
         },
         classicByValue : function(r1, g1, b1, r2, g2, b2){
             return (Math.abs(r1-r2)+Math.abs(g1-g2)+Math.abs(b1-b2)+
@@ -158,9 +234,15 @@
             )
         },
         closestByIntensity : function(r1, g1, b1, r2, g2, b2){
-            return ((r1 + r2)/510)*Math.abs(r1-r2) +
+            var o1 = gavel(r1, g1, b1);
+            var o2 = gavel(r2, g2, b2);
+            var d = byChannel([o1, o2], (v1, v2, channel)=>{
+                return signal(delta(v1, v2)) * ((v1+v2)/510);
+            });
+            return d.r + d.g + d.b;
+            /*return ((r1 + r2)/510)*Math.abs(r1-r2) +
             ((g1 + g2)/510)*Math.abs(g1-g2) +
-            ((b1 + b2)/510)*Math.abs(b1-b2)
+            ((b1 + b2)/510)*Math.abs(b1-b2)*/
         },
         rankedChannel : function(r1, g1, b1, r2, g2, b2){
             var pos = {};
@@ -194,15 +276,25 @@
                     }
                 }
             }
-            return 4*Math.abs(arguments[pos.max]-arguments[pos.max+3]) +
-                2*Math.abs(arguments[pos.mid]-arguments[pos.mid+3]) +
-                Math.abs(arguments[pos.min]-arguments[pos.min+3])
+            return 4 * signal(arguments[pos.max]-arguments[pos.max+3]) +
+                   2 * signal(arguments[pos.mid]-arguments[pos.mid+3]) +
+                       signal(arguments[pos.min]-arguments[pos.min+3])
         },
         simple : function(r1, g1, b1, r2, g2, b2){
-            return (r2-r1)^2 + (g2-g1)^2 + (b2-b1)^2;
+            var o1 = gavel(r1, g1, b1);
+            var o2 = gavel(r2, g2, b2);
+            var d = byChannel([o1, o2], (v1, v2, channel)=>{
+                return delta(v1, v2)^2;
+            });
+            return d.r + d.g + d.b;
         },
         original: function(r1, g1, b1, r2, g2, b2){
-            return (Math.abs(r1-r2)+Math.abs(g1-g2)+Math.abs(b1-b2))/3;
+            var o1 = gavel(r1, g1, b1);
+            var o2 = gavel(r2, g2, b2);
+            var d = byChannel([o1, o2], (v1, v2, channel)=>{
+                return signal(delta(v1, v2));
+            });
+            return (d.r + d.g + d.b)/3;
         }
     }
     Color.useDistance = function(type, fetch){
@@ -273,34 +365,47 @@
 
     var closestPosition = function(color, colors, names){
         var distances = colors.map(function(candidate){
-            return Color.distance(
+            var v = Color.distance(
                 color[0], color[1], color[2],
                 candidate[0], candidate[1], candidate[2]
             );
+            if(Number.isNaN(v)){
+                console.log('!!!', color, candidate)
+            }
+            return v;
         });
-        distances.forEach(function(item, index){
+        /*distances.forEach(function(item, index){
             if(!names) return;
             if(color[0] === color[1] && color[0] === color[2]) return;
         })//*/
         var position;
         var distance;
+        //var distance = Number.MAX_SAFE_INTEGER;
+        var finished = false;
         distances.forEach(function(thisDistance, pos){
+            //console.log('D', distance, thisDistance, position)
+            if(finished) return;
             if( (!distance) || distance > thisDistance ){
                 distance = thisDistance;
                 position = pos;
+                if(distance === 0) finished = true;
             }
         });
         if(Color.debug){
             //if(colors.length < 255) throw new Error('in 256 color there are only '+colors.length+' colors!')
             //console.log( (new Error()).stack )
+            var acc = '';
+            var targets = [];
             distances.forEach(function(item, index){
                 var target = Color.hex(color);
+                if(targets.indexOf(target) === -1) targets.push(target)
                 var comperable = Color.hex(colors[index]);
                 var index = ansi256.indexOf(comperable);
-                console.log('['+target+'] '+item+' ['+(
+                acc += (Math.floor(item * 100)/100)+'['+(
                     index !== -1 ? '\033[38;5;'+ansi256.indexOf(comperable)+'m':' ?? '
-                )+comperable+Color.code()+']'+(index === position?' <- ':''));
+                )+comperable+Color.code()+']'+(index === position?'* ':'')+", ";
             });
+            console.log('['+targets.join(', ')+'] '+acc);
         }
         return position;
     };
@@ -513,6 +618,6 @@
     Color.terminalColors = function(){
 
     }
-
+    cache = Color;
     return Color;
 }));

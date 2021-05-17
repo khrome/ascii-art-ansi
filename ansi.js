@@ -46,23 +46,23 @@
             var result;
             var lowerbound = 0;
             var upperbound;
-            if(!stop) upperbound = value.length;
+            if(stop === null) upperbound = value.length;
             var isDone = false;
             AsciiArt.Ansi.map(
                 value,
                 function(chr, codes, rowcol, pos, done, charPos){
                     if(start && pos === start){
                         lowerbound = previousCharPos+1;
-                        if(!stop) done();
+                        if(stop === null) done();
                     }
                     if(stop && pos === stop){
                         upperbound = charPos;
-                        if(!stop) done();
+                        if(stop === null) done();
                     }
                     previousCharPos = charPos;
                 }
             );
-            return value.substring(upperbound, lowerbound);
+            return value.substring(lowerbound, upperbound);
         },
         trimTo :function(value, length){
             var result = AsciiArt.Ansi.substring(value, 0, length);
@@ -183,7 +183,7 @@
             return result;
         },
         map :function(value, handler, includeLineEndings){
-            if(!value) throw new Error('cannot map undefined!');
+            if(value === null) throw new Error('cannot map undefined!');
             var lcv = 0;
             var result = '';
             var inEscape = false;
