@@ -103,19 +103,23 @@
             if(offX < 0) offX = this.width + offX - dims.width +1;
             if(offY < 0) offY = this.height + offY - dims.height +1;
         }
-        if(!offX) offX = 0;
-        if(!offY) offY = 0;
+        if(offX === null) offX = 0;
+        if(offY === null) offY = 0;
         var x = 0;
         var y = 0;
         var ob = this;
         ansi.map(str, function(chr, styles, p, pos, shortCircuit){
-            if(chr == "\n" ){
+            if(ob.debug) console.log(chr, offX+x, offY+y, offX, x, offY, y);
+            if(chr === "\n" ){
                 y++;
                 x=0;
             }else{
+                //if(ob.debug) console.log(offX+x, offY+y, offX, x, offY, y)
+                //*
                 if(chr && (!(isTransparent && isEmpty(chr) ))) ob.setValue(offX+x, offY+y, {
                     chr:chr, styles:styles
                 }, mergeStyles);
+                //*/
                 x++;
             }
         }, true);
